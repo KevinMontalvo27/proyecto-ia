@@ -9,3 +9,8 @@ transformers==4.56.2
 torch==2.8.0
 python-dotenv==1.1.1
 pyswip==0.3.3
+openmeteo-requests==1.7.2
+pandas==2.2.3
+requests-cache==1.2.1
+retry-requests==2.0.0
+numpy==2.3.3
