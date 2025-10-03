@@ -16,3 +16,4 @@ retry-requests==2.0.0
 numpy==2.3.3
 openmeteo_requests~=1.7.2
 certifi~=2025.8.3
+pillow~=11.3.0
