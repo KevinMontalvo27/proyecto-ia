@@ -1,4 +1,5 @@
-import requests, certifi
+# main.py
+from database_config import create_database
 
-response = requests.get("https://huggingface.co", verify=certifi.where())
-print("Status:", response.status_code)
+if __name__ == "__main__":
+    create_database()
