@@ -1,11 +1,11 @@
-from .user import UserCreate, UserLogin, UserResponse, UserUpdate
-from .greenhouse import GreenhouseCreate, GreenhouseResponse, GreenhouseUpdate
-from .plant import PlantCreate, PlantResponse, PlantUpdate
-from .sensor import SensorCreate, SensorResponse, SensorUpdate
-from .sensor_reading import SensorReadingCreate, SensorReadingResponse
-from .plant_analysis import PlantAnalysisCreate, PlantAnalysisResponse
-from .chat import ChatCreate, ChatResponse, ChatUpdate
-from .message import MessageCreate, MessageResponse
+from .user_schema import UserCreate, UserLogin, UserResponse, UserUpdate
+from .greenhouse_schema import GreenhouseCreate, GreenhouseResponse, GreenhouseUpdate
+from .plant_schema import PlantCreate, PlantResponse, PlantUpdate
+from .sensor_schema import SensorCreate, SensorResponse, SensorUpdate
+from .sensor_reading_schema import SensorReadingCreate, SensorReadingResponse
+from .plant_analysis_schema import PlantAnalysisCreate, PlantAnalysisResponse
+from .chat_schema import ChatCreate, ChatResponse, ChatUpdate
+from .message_schema import MessageCreate, MessageResponse
 
 __all__ = [
     # User
