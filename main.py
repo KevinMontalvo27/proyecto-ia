@@ -1,5 +1,29 @@
-# main.py
-from database_config import create_database
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from endpoints.user_endpoints import router as user_router
 
-if __name__ == "__main__":
-    create_database()
+app = FastAPI(
+    title="Greenhouse API",
+    description="API para gestión de invernaderos",
+    version="1.0.0"
+)
+
+# Configurar CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # En producción, especifica los dominios permitidos
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Incluir routers
+app.include_router(user_router)
+
+@app.get("/")
+def root():
+    return {
+        "message": "Greenhouse API v1.0",
+        "docs": "/docs",
+        "status": "running"
+    }
