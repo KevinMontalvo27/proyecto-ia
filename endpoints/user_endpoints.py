@@ -14,7 +14,6 @@ def get_db():
     finally:
         db.close()
 
-
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     """
@@ -51,7 +50,6 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         )
 
     return db_user
-
 
 @router.patch("/{user_id}", response_model=UserResponse)
 def update_user(
@@ -113,7 +111,6 @@ def update_user(
         )
 
     return updated_user
-
 
 @router.post("/login")
 def authenticate_user(credentials: UserLogin, db: Session = Depends(get_db)):
