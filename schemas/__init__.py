@@ -3,7 +3,12 @@ from .greenhouse_schema import GreenhouseCreate, GreenhouseResponse, GreenhouseU
 from .plant_schema import PlantCreate, PlantResponse, PlantUpdate
 from .sensor_schema import SensorCreate, SensorResponse, SensorUpdate
 from .sensor_reading_schema import SensorReadingCreate, SensorReadingResponse
-from .plant_analysis_schema import PlantAnalysisCreate, PlantAnalysisResponse
+from .plant_analysis_schema import (
+    PlantHealthPrediction,
+    PlantHealthAnalysisResponse,
+    DiseaseInfo,
+    DiseaseInfoResponse
+)
 from .chat_schema import ChatCreate, ChatResponse, ChatUpdate
 from .message_schema import MessageCreate, MessageResponse
 
@@ -19,7 +24,8 @@ __all__ = [
     # SensorReading
     'SensorReadingCreate', 'SensorReadingResponse',
     # PlantAnalysis
-    'PlantAnalysisCreate', 'PlantAnalysisResponse',
+    'PlantHealthPrediction', 'PlantHealthAnalysisResponse',
+    'DiseaseInfo', 'DiseaseInfoResponse',
     # Chat
     'ChatCreate', 'ChatResponse', 'ChatUpdate',
     # Message

@@ -1,4 +1,3 @@
-# main.py
 import os, certifi
 os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 
