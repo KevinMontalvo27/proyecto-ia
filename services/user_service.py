@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from models.user_model import User
 
 
@@ -138,3 +138,22 @@ class UserService:
             User: Usuario encontrado o None
         """
         return db.query(User).filter(User.username == username).first()
+
+    @staticmethod
+    def get_all_users(
+            db: Session,
+            skip: int = 0,
+            limit: int = 100
+    ) -> List[User]:
+        """
+        Obtiene todos los usuarios de la base de datos
+
+        Args:
+            db: Sesión de base de datos
+            skip: Número de registros a saltar (paginación)
+            limit: Número máximo de registros a retornar
+
+        Returns:
+            List[User]: Lista de usuarios
+        """
+        return db.query(User).offset(skip).limit(limit).all()
