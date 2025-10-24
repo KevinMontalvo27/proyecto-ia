@@ -1,6 +1,9 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
+
+if TYPE_CHECKING:
+    from .message_schema import MessageResponse
 
 
 class ChatBase(BaseModel):
@@ -31,3 +34,11 @@ class ChatResponse(ChatBase):
 class ChatDetailResponse(ChatResponse):
     """Schema con mensajes del chat"""
     messages: List['MessageResponse'] = []
+
+    class Config:
+        from_attributes = True
+
+
+# Resolver referencias circulares
+from .message_schema import MessageResponse
+ChatDetailResponse.model_rebuild()
