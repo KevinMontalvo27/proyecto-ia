@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from schemas.user_schema import UserCreate, UserUpdate, UserLogin, UserResponse
 from services.user_service import UserService
 from database_config import SessionLocal
+from typing import List
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -146,3 +147,31 @@ def authenticate_user(credentials: UserLogin, db: Session = Depends(get_db)):
         "user_id": user.id,
         "username": user.username
     }
+
+
+@router.get("/", response_model=List[UserResponse])
+def get_all_users(
+        skip: int = 0,
+        limit: int = 100,
+        db: Session = Depends(get_db)
+):
+    """
+    Obtener todos los usuarios
+
+    Args:
+        skip: Número de registros a saltar (paginación)
+        limit: Número máximo de registros a retornar (máximo 100)
+        db: Sesión de base de datos
+
+    Returns:
+        List[UserResponse]: Lista de usuarios
+
+    Example:
+        GET /users/?skip=0&limit=10
+    """
+    # Limitar el máximo de usuarios por request
+    if limit > 100:
+        limit = 100
+
+    users = UserService.get_all_users(db=db, skip=skip, limit=limit)
+    return users
