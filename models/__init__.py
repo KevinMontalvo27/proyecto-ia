@@ -11,6 +11,8 @@ from .sensor_reading_model import SensorReading
 from .plant_analysis_model import PlantAnalysis
 from .chat_model import Chat
 from .message_model import Message
+from .sensor_data import SensorData
+from .plant_health import PlantHealth
 
 __all__ = [
     'Base',
@@ -21,5 +23,7 @@ __all__ = [
     'SensorReading',
     'PlantAnalysis',
     'Chat',
-    'Message'
+    'Message',
+    'SensorData',
+    'PlantHealth',
 ]
