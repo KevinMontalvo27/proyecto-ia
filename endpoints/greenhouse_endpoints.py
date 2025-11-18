@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from schemas.greenhouse_schema import (
@@ -199,3 +200,38 @@ def delete_greenhouse(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Error al eliminar el invernadero"
         )
+
+
+@router.get("/user/{user_id}", response_model=List[GreenhouseResponse])
+def get_user_greenhouses(
+        user_id: int,
+        skip: int = 0,
+        limit: int = 100,
+        db: Session = Depends(get_db)
+):
+    """
+    Obtener todos los invernaderos de un usuario
+
+    Args:
+        user_id: ID del usuario
+        skip: Número de registros a saltar (paginación)
+        limit: Número máximo de registros a retornar
+        db: Sesión de base de datos
+
+    Returns:
+        List[GreenhouseResponse]: Lista de invernaderos del usuario ordenados por fecha de creación
+
+    Example:
+        GET /greenhouses/user/1?skip=0&limit=10
+    """
+    # TODO: En producción, verificar que el user_id del JWT coincida con el solicitado
+    # o que tenga permisos de admin
+
+    greenhouses = GreenhouseService.get_user_greenhouses(
+        db=db,
+        user_id=user_id,
+        skip=skip,
+        limit=limit
+    )
+
+    return greenhouses

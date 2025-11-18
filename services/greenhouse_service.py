@@ -110,3 +110,50 @@ class GreenhouseService:
         db.delete(db_greenhouse)
         db.commit()
         return True
+
+    @staticmethod
+    def get_user_greenhouses(
+            db: Session,
+            user_id: int,
+            skip: int = 0,
+            limit: int = 100
+    ) -> List[Greenhouse]:
+        """
+        Obtiene todos los invernaderos de un usuario
+
+        Args:
+            db: Sesión de base de datos
+            user_id: ID del usuario
+            skip: Número de registros a saltar (paginación)
+            limit: Número máximo de registros a retornar
+
+        Returns:
+            List[Greenhouse]: Lista de invernaderos del usuario
+        """
+        return db.query(Greenhouse).filter(
+            Greenhouse.user_id == user_id
+        ).order_by(
+            Greenhouse.created_at.desc()
+        ).offset(skip).limit(limit).all()
+
+    @staticmethod
+    def user_owns_greenhouse(
+            db: Session,
+            greenhouse_id: int,
+            user_id: int
+    ) -> bool:
+        """
+        Verifica si un usuario es propietario de un invernadero
+
+        Args:
+            db: Sesión de base de datos
+            greenhouse_id: ID del invernadero
+            user_id: ID del usuario
+
+        Returns:
+            bool: True si el usuario es propietario, False si no
+        """
+        greenhouse = GreenhouseService.get_greenhouse_by_id(db, greenhouse_id)
+        if not greenhouse:
+            return False
+        return greenhouse.user_id == user_id
