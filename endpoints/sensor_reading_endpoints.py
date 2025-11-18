@@ -5,7 +5,7 @@ from datetime import datetime
 from schemas.sensor_reading_schema import (
     SensorReadingCreate,
     SensorReadingResponse,
-    SensorReadingBulkCreate
+    SensorReadingBulkCreate, ArduinoResponse
 )
 from services.sensor_reading_service import SensorReadingService
 from services.sensor_service import SensorService
@@ -24,58 +24,76 @@ def get_db():
         db.close()
 
 
-@router.post("/", response_model=SensorReadingResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ArduinoResponse, status_code=status.HTTP_201_CREATED)
 def create_reading(
         reading: SensorReadingCreate,
-        user_id: int,  # TODO: En producción esto vendrá del token JWT
         db: Session = Depends(get_db)
 ):
     """
-    Crear una nueva lectura de sensor
+    Crear una nueva lectura de sensor (endpoint para Arduino)
+
+    Este endpoint NO requiere autenticación ya que es usado por dispositivos Arduino.
+    Solo valida que el sensor exista en la base de datos.
 
     Args:
         reading: Datos de la lectura (sensor_id, value)
-        user_id: ID del usuario que hace la petición
         db: Sesión de base de datos
 
     Returns:
-        SensorReadingResponse: Lectura creada
+        ArduinoResponse: Respuesta con status, mensaje y estado de actuación
 
-    Raises:
-        HTTPException 404: Si el sensor no existe
-        HTTPException 403: Si el usuario no es propietario del invernadero
-        HTTPException 400: Si hay error al crear
+    Example Request:
+        POST /sensor-readings/
+        Body: {
+          "sensor_id": 1,
+          "value": 25.5
+        }
+
+    Example Response:
+        {
+          "status": "ok",
+          "msg": "Datos recibidos correctamente",
+          "actuado": true
+        }
     """
-    # Verificar que el sensor existe
-    sensor = SensorService.get_sensor_by_id(db, reading.sensor_id)
-    if not sensor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Sensor no encontrado"
+    try:
+        # Verificar que el sensor existe
+        sensor = SensorService.get_sensor_by_id(db, reading.sensor_id)
+        if not sensor:
+            return ArduinoResponse(
+                status="error",
+                msg="Sensor no encontrado",
+                actuado=False
+            )
+
+        # Crear lectura
+        db_reading = SensorReadingService.create_reading(
+            db=db,
+            sensor_id=reading.sensor_id,
+            value=reading.value
         )
 
-    # Verificar permisos del usuario
-    if not GreenhouseService.user_owns_greenhouse(db, sensor.greenhouse_id, user_id):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tienes permisos para agregar lecturas a este sensor"
+        if not db_reading:
+            return ArduinoResponse(
+                status="error",
+                msg="Error al crear la lectura",
+                actuado=False
+            )
+
+        actuado = False
+
+        return ArduinoResponse(
+            status="ok",
+            msg="Datos recibidos correctamente",
+            actuado=actuado
         )
 
-    # Crear lectura
-    db_reading = SensorReadingService.create_reading(
-        db=db,
-        sensor_id=reading.sensor_id,
-        value=reading.value
-    )
-
-    if not db_reading:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Error al crear la lectura"
+    except Exception as e:
+        return ArduinoResponse(
+            status="error",
+            msg=f"Error al procesar la lectura: {str(e)}",
+            actuado=False
         )
-
-    return db_reading
-
 
 @router.post("/bulk", status_code=status.HTTP_201_CREATED)
 def create_bulk_readings(
