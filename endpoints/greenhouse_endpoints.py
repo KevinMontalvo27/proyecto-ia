@@ -25,7 +25,7 @@ def get_db():
 @router.post("/", response_model=GreenhouseResponse, status_code=status.HTTP_201_CREATED)
 def create_greenhouse(
         greenhouse: GreenhouseCreate,
-        user_id: int,  # TODO: En producción esto vendrá del token JWT
+        user_id: int,  # TODO: En producción esto vendrá del token JWT, produccion mis webos montalvo
         db: Session = Depends(get_db)
 ):
     """

@@ -49,3 +49,6 @@ pyswip==0.3.3
 tqdm==4.67.1
 filelock==3.19.1
 typing-extensions==4.15.0
+
+#API de Google  Gemini
+google-generativeai==0.8.5

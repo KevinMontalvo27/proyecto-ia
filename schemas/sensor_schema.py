@@ -5,7 +5,7 @@ from datetime import datetime
 
 class SensorBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, description="Nombre del sensor")
-    type: Literal['temperature', 'humidity', 'light', 'soil_moisture'] = Field(
+    type: Literal['temperatura', 'humedad', 'luz', 'humo'] = Field(
         ..., description="Tipo de sensor"
     )
 
@@ -19,7 +19,7 @@ class SensorCreate(SensorBase):
 class SensorUpdate(BaseModel):
     """Schema para actualizar sensor"""
     name: Optional[str] = Field(None, min_length=1, max_length=100)
-    type: Optional[Literal['temperature', 'humidity', 'light', 'soil_moisture']] = None
+    type: Optional[Literal['temperatura', 'humedad', 'luz', 'humo']] = None
     active: Optional[bool] = None
 
 
