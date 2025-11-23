@@ -11,6 +11,22 @@ from services.sensor_reading_service import SensorReadingService
 from services.sensor_service import SensorService
 from services.greenhouse_service import GreenhouseService
 from database_config import SessionLocal
+from pyswip import Prolog
+import os
+
+# Inicializar Prolog (UNA SOLA VEZ)
+prolog = Prolog()
+prolog_file = os.path.join(
+    os.path.dirname(__file__),
+    '../prolog/plant_diagnostics.pl'
+)
+
+try:
+    prolog.consult(prolog_file)
+    list(prolog.query('inicializar_sistema'))
+    print("Prolog cargado correctamente")
+except Exception as e:
+    print(f"Error al cargar Prolog: {e}")
 
 router = APIRouter(prefix="/sensor-readings", tags=["sensor-readings"])
 
@@ -80,14 +96,72 @@ def create_reading(
                 actuado=False
             )
 
-        actuado = False
+        # 3. CONSULTAR PROLOG
+        try:
+            sensor_type = sensor.type  # "temperatura", "humedad", "luz", "humo"
+            plant_type = "tomate"       # ← HARDCODEADO COMO DEFAULT
+            valor = reading.value
+            
+            print("\n" + "="*60)
+            print("DEBUG - CONSULTANDO PROLOG")
+            print("="*60)
+            print(f"sensor_type: {sensor_type} (type: {type(sensor_type)})")
+            print(f"plant_type: {plant_type} (type: {type(plant_type)})")
+            print(f"valor: {valor} (type: {type(valor)})")
+            print(f"prolog object: {prolog}")
+            print(f"prolog state: {prolog.asserta_rules if hasattr(prolog, 'asserta_rules') else 'N/A'}")
+            
+            # Consultar Prolog
+            query_str = f'sensor_fuera_de_rango({sensor_type}, {plant_type}, {valor}, R)'
+            print(f"\n->Query string exacto:")
+            print(f"   {query_str}")
+            
+            print(f"\n->Ejecutando query...")
+            query_result = list(prolog.query(query_str))
+            
+            print(f"->Query ejecutada")
+            print(f"   Resultados: {query_result}")
+            print(f"   Cantidad: {len(query_result)}")
+            
+            if query_result:
+                print(f"\n->HAY RESULTADOS")
+                actuado_str = query_result[0]['R']  # 'true' o 'false' como string
+                actuado = actuado_str == 'true'     # Convertir a boolean
+                print(f"   actuado_str = {actuado_str}")
+                print(f"   actuado (bool) = {actuado}")
+                print(f"   type(actuado) = {type(actuado)}")
+                
+                msg = f"{'ALERTA' if actuado else 'OK'}: {sensor_type} para {plant_type}"
+                print(f"   msg = {msg}")
+                print("="*60 + "\n")
+                
+                return ArduinoResponse(
+                    status="ok",
+                    msg=msg,
+                    actuado=actuado
+                )
+            else:
+                print(f"\n->SIN RESULTADOS")
+                print("="*60 + "\n")
+                return ArduinoResponse(
+                    status="error",
+                    msg="No hay datos de umbral para este sensor",
+                    actuado=False
+                )
 
-        return ArduinoResponse(
-            status="ok",
-            msg="Datos recibidos correctamente",
-            actuado=actuado
-        )
-
+        except Exception as prolog_error:
+            print(f"\n->EXCEPTION EN PROLOG")
+            print(f"   Error: {prolog_error}")
+            print(f"   Type: {type(prolog_error)}")
+            import traceback
+            traceback.print_exc()
+            print("="*60 + "\n")
+            return ArduinoResponse(
+                status="error",
+                msg=f"Error en Prolog: {str(prolog_error)}",
+                actuado=False
+            )
+        
     except Exception as e:
         return ArduinoResponse(
             status="error",
