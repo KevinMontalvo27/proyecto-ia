@@ -9,7 +9,7 @@
 connect_db :-
     odbc_connect('PostgreSQL35W', _Conn,
         [ user('postgres'),
-          password('admin123'),
+          password('123456789'),
           alias(pgdb),
           open(once)
         ]).
@@ -76,33 +76,25 @@ sensor_luz_estado(luz, PlantType, Valor, Estado) :-
     ; Estado = normal        % Normal → Sin recomendación
     ).
 
-
-% ------------------------------
-% LLAMAR SCRIPT PYTHON
-% ------------------------------
-activar_sistema(Planta, Diagnosticos) :-
-    format('Activando sistema para ~w. Enfermedades detectadas: ~w~n',
-           [Planta, Diagnosticos]),
-    atomics_to_string(Diagnosticos, " ", DiagStr),
-    % Ejecuta el script Python con los argumentos
-    process_create(
-        path(python),
-        ['actuador.py', Planta, DiagStr],
-        [cwd('C:/Users/Dell/Documents/Prolog')]  %CAMBIAR RUTA SI ES NECESARIO
-    ).
-
-% ------------------------------
-% REGLAS   PARA CONSULTAS EXTERNAS
-% ------------------------------
+% Caso 1: Diagnóstico registrado en BD y NO es healthy
 check_planta(Planta, Diagnostico, Respuesta) :-
-    planta_tiene(Planta, Diagnostico),      % Verifica que exista ese diagnóstico
+    planta_tiene(Planta, Diagnostico),      % Verifica que exista en la BD
     Diagnostico \= healthy,                 % Solo si no es healthy
-    activar_sistema(Planta, [Diagnostico]), % Llama al script
-    format(string(Respuesta), "Alerta activada para ~w: ~w", [Planta, Diagnostico]).
+    format(string(Respuesta), "Alerta: ~w detectado en ~w. Se recomienda intervencion inmediata.", [Diagnostico, Planta]).
 
-% Si la planta está sana
+% Caso 2: Planta está sana
 check_planta(Planta, healthy, Respuesta) :-
-    format(string(Respuesta), "~w está saludable, no se activa alerta.", [Planta]).
+    format(string(Respuesta), "~w está saludable. No se requiere accion.", [Planta]).
+
+% Caso 3: Diagnóstico NO registrado en la BD (nuevo diagnóstico detectado)
+check_planta(Planta, Diagnostico, Respuesta) :-
+    Diagnostico \= healthy,
+    \+ planta_tiene(Planta, Diagnostico),   % NO existe en la BD
+    format(string(Respuesta), "Nuevo diagnóstico detectado: ~w en ~w. No está registrado en el sistema, se recomienda analisis adicional.", [Diagnostico, Planta]).
+
+% Caso 4: Diagnóstico desconocido
+check_planta(Planta, unknown, Respuesta) :-
+    format(string(Respuesta), "No se pudo identificar el diagnostico para ~w. Se recomienda inspeccion manual.", [Planta]).
 
 % ============================================================
 % INICIALIZAR TODO EL SISTEMA
