@@ -1,172 +1,189 @@
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy.exc import IntegrityError
-from typing import Optional, List, Dict, Any
-from models.plant_model import Plant
+from sqlalchemy.orm import Session
+from datetime import datetime
+from typing import Dict, Any, Optional
+from models.plant_analysis_model import PlantAnalysis
 
 
-class PlantService:
+class PlantAnalysisService:
+    """
+    Servicio para manejar operaciones de análisis de plantas en la base de datos.
+    """
+
     @staticmethod
-    def create_plant(
+    def create_analysis(
             db: Session,
-            name: str,
-            type: str,
-            greenhouse_id: int
-    ) -> Optional[Plant]:
+            plant_id: int,
+            diagnosis: str,
+            confidence: float,
+            analysis_type: str = 'health'
+    ) -> PlantAnalysis:
         """
-        Crea una nueva planta en la base de datos
+        Crea un nuevo registro de análisis en la base de datos.
 
         Args:
-            db: Sesión de base de datos
-            name: Nombre de la planta
-            type: Tipo de planta
-            greenhouse_id: ID del invernadero
+            db: Sesión de SQLAlchemy
+            plant_id: ID de la planta (1=tomate, 2=maiz, 3=uva, 4=papa)
+            diagnosis: Diagnóstico obtenido (ej: "late_blight", "healthy")
+            confidence: Nivel de confianza del modelo (0-1)
+            analysis_type: Tipo de análisis ('health' o 'pest')
 
         Returns:
-            Plant: Planta creada o None si hay error
+            PlantAnalysis: Objeto del análisis creado
+
+        Raises:
+            Exception: Si hay error al guardar en la BD
         """
         try:
-            db_plant = Plant(
-                name=name,
-                type=type,
-                greenhouse_id=greenhouse_id
+            new_analysis = PlantAnalysis(
+                plant_id=plant_id,
+                analysis_type=analysis_type,
+                result=diagnosis,
+                confidence=confidence,
+                analyzed_at=datetime.utcnow()
             )
 
-            db.add(db_plant)
+            db.add(new_analysis)
             db.commit()
-            db.refresh(db_plant)
+            db.refresh(new_analysis)
 
-            return db_plant
+            print(f"✓ Análisis guardado: Plant ID {plant_id} - {diagnosis} ({confidence:.2%})")
+            return new_analysis
 
-        except IntegrityError:
+        except Exception as e:
             db.rollback()
-            return None
+            print(f"✗ Error al guardar análisis: {str(e)}")
+            raise Exception(f"Error al guardar en BD: {str(e)}")
 
     @staticmethod
-    def get_plant_by_id(db: Session, plant_id: int) -> Optional[Plant]:
+    def get_latest_analysis(
+            db: Session,
+            plant_id: int,
+            analysis_type: str = 'health'
+    ) -> Optional[PlantAnalysis]:
         """
-        Obtiene una planta por su ID
+        Obtiene el análisis más reciente de una planta.
 
         Args:
-            db: Sesión de base de datos
+            db: Sesión de SQLAlchemy
+            plant_id: ID de la planta
+            analysis_type: Tipo de análisis a buscar
+
+        Returns:
+            PlantAnalysis o None si no hay análisis
+        """
+        return db.query(PlantAnalysis).filter(
+            PlantAnalysis.plant_id == plant_id,
+            PlantAnalysis.analysis_type == analysis_type
+        ).order_by(PlantAnalysis.analyzed_at.desc()).first()
+
+    @staticmethod
+    def get_plant_history(
+            db: Session,
+            plant_id: int,
+            limit: int = 10
+    ) -> list[PlantAnalysis]:
+        """
+        Obtiene el historial de análisis de una planta.
+
+        Args:
+            db: Sesión de SQLAlchemy
+            plant_id: ID de la planta
+            limit: Número máximo de resultados
+
+        Returns:
+            Lista de análisis ordenados por fecha (más reciente primero)
+        """
+        return db.query(PlantAnalysis).filter(
+            PlantAnalysis.plant_id == plant_id
+        ).order_by(PlantAnalysis.analyzed_at.desc()).limit(limit).all()
+
+    @staticmethod
+    def get_unhealthy_plants(
+            db: Session,
+            confidence_threshold: float = 0.7
+    ) -> list[PlantAnalysis]:
+        """
+        Obtiene todas las plantas con problemas de salud con alta confianza.
+
+        Args:
+            db: Sesión de SQLAlchemy
+            confidence_threshold: Umbral mínimo de confianza
+
+        Returns:
+            Lista de análisis de plantas no saludables
+        """
+        from sqlalchemy import and_
+
+        return db.query(PlantAnalysis).filter(
+            and_(
+                PlantAnalysis.analysis_type == 'health',
+                PlantAnalysis.result != 'healthy',
+                PlantAnalysis.confidence >= confidence_threshold
+            )
+        ).order_by(PlantAnalysis.analyzed_at.desc()).all()
+
+    @staticmethod
+    def get_analysis_by_id(
+            db: Session,
+            analysis_id: int
+    ) -> Optional[PlantAnalysis]:
+        """
+        Obtiene un análisis específico por su ID.
+
+        Args:
+            db: Sesión de SQLAlchemy
+            analysis_id: ID del análisis
+
+        Returns:
+            PlantAnalysis o None si no existe
+        """
+        return db.query(PlantAnalysis).filter(
+            PlantAnalysis.id == analysis_id
+        ).first()
+
+    @staticmethod
+    def count_analyses_by_plant(
+            db: Session,
+            plant_id: int
+    ) -> int:
+        """
+        Cuenta el número total de análisis de una planta.
+
+        Args:
+            db: Sesión de SQLAlchemy
             plant_id: ID de la planta
 
         Returns:
-            Plant: Planta encontrada o None
+            Número de análisis realizados
         """
-        return db.query(Plant).filter(Plant.id == plant_id).first()
+        return db.query(PlantAnalysis).filter(
+            PlantAnalysis.plant_id == plant_id
+        ).count()
 
     @staticmethod
-    def get_plant_complete(db: Session, plant_id: int) -> Optional[Plant]:
-        """
-        Obtiene una planta con sus análisis cargados
-
-        Args:
-            db: Sesión de base de datos
-            plant_id: ID de la planta
-
-        Returns:
-            Plant: Planta con análisis o None
-        """
-        return db.query(Plant).options(
-            joinedload(Plant.analyses)
-        ).filter(Plant.id == plant_id).first()
-
-    @staticmethod
-    def get_plants_by_greenhouse(
+    def delete_analysis(
             db: Session,
-            greenhouse_id: int,
-            skip: int = 0,
-            limit: int = 100
-    ) -> List[Plant]:
-        """
-        Obtiene todas las plantas de un invernadero
-
-        Args:
-            db: Sesión de base de datos
-            greenhouse_id: ID del invernadero
-            skip: Número de registros a saltar
-            limit: Número máximo de registros a retornar
-
-        Returns:
-            List[Plant]: Lista de plantas
-        """
-        return db.query(Plant).filter(
-            Plant.greenhouse_id == greenhouse_id
-        ).offset(skip).limit(limit).all()
-
-    @staticmethod
-    def update_plant(
-            db: Session,
-            plant_id: int,
-            update_data: Dict[str, Any]
-    ) -> Optional[Plant]:
-        """
-        Actualiza los datos de una planta
-
-        Args:
-            db: Sesión de base de datos
-            plant_id: ID de la planta a actualizar
-            update_data: Diccionario con los campos a actualizar
-
-        Returns:
-            Plant: Planta actualizada o None si no existe
-        """
-        db_plant = PlantService.get_plant_by_id(db, plant_id)
-
-        if not db_plant:
-            return None
-
-        for field, value in update_data.items():
-            if hasattr(db_plant, field):
-                setattr(db_plant, field, value)
-
-        try:
-            db.commit()
-            db.refresh(db_plant)
-            return db_plant
-        except IntegrityError:
-            db.rollback()
-            return None
-
-    @staticmethod
-    def delete_plant(db: Session, plant_id: int) -> bool:
-        """
-        Elimina una planta de la base de datos
-
-        Args:
-            db: Sesión de base de datos
-            plant_id: ID de la planta a eliminar
-
-        Returns:
-            bool: True si se eliminó, False si no existe
-        """
-        db_plant = PlantService.get_plant_by_id(db, plant_id)
-
-        if not db_plant:
-            return False
-
-        db.delete(db_plant)
-        db.commit()
-        return True
-
-    @staticmethod
-    def plant_belongs_to_greenhouse(
-            db: Session,
-            plant_id: int,
-            greenhouse_id: int
+            analysis_id: int
     ) -> bool:
         """
-        Verifica si una planta pertenece a un invernadero específico
+        Elimina un análisis de la base de datos.
 
         Args:
-            db: Sesión de base de datos
-            plant_id: ID de la planta
-            greenhouse_id: ID del invernadero
+            db: Sesión de SQLAlchemy
+            analysis_id: ID del análisis a eliminar
 
         Returns:
-            bool: True si pertenece, False si no
+            True si se eliminó correctamente, False si no existe
         """
-        plant = PlantService.get_plant_by_id(db, plant_id)
-        if not plant:
+        try:
+            analysis = PlantAnalysisService.get_analysis_by_id(db, analysis_id)
+            if analysis:
+                db.delete(analysis)
+                db.commit()
+                print(f"✓ Análisis {analysis_id} eliminado")
+                return True
             return False
-        return plant.greenhouse_id == greenhouse_id
+        except Exception as e:
+            db.rollback()
+            print(f"✗ Error al eliminar análisis: {str(e)}")
+            raise Exception(f"Error al eliminar análisis: {str(e)}")
