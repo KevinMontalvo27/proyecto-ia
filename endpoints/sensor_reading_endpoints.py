@@ -82,19 +82,23 @@ def create_reading(
                 actuado=False
             )
 
-        # Crear lectura
-        db_reading = SensorReadingService.create_reading(
-            db=db,
-            sensor_id=reading.sensor_id,
-            value=reading.value
-        )
-
-        if not db_reading:
-            return ArduinoResponse(
-                status="error",
-                msg="Error al crear la lectura",
-                actuado=False
+        # 🔥 VALIDAR: Si es humo, NO guardar en BD
+        if sensor.type == "humo":
+            print(f"\nSENSOR HUMO DETECTADO - No se guardará en BD")
+        else:
+            # Crear lectura SOLO si NO es humo
+            db_reading = SensorReadingService.create_reading(
+                db=db,
+                sensor_id=reading.sensor_id,
+                value=reading.value
             )
+
+            if not db_reading:
+                return ArduinoResponse(
+                    status="error",
+                    msg="Error al crear la lectura",
+                    actuado=False
+                )
 
         # 3. CONSULTAR PROLOG
         try:
@@ -131,7 +135,28 @@ def create_reading(
                 print(f"   actuado (bool) = {actuado}")
                 print(f"   type(actuado) = {type(actuado)}")
                 
-                msg = f"{'ALERTA' if actuado else 'OK'}: {sensor_type} para {plant_type}"
+                if sensor_type == "humo":
+                    actuado_str = query_result[0]['R']
+                    actuado = actuado_str == 'true'
+                    msg = f"{'ALERTA HUMO' if actuado else 'SIN HUMO'}: Nivel {valor}"
+                
+                elif sensor_type == "luz":
+                    resultado = query_result[0]['R']
+                    # Convertir a boolean: low_light o high_light = true, false = false
+                    actuado = resultado != 'false'
+                    
+                    if resultado == 'low_light':
+                        msg = f"ALERTA LUZ: Aumentar iluminación (Actual: {valor})"
+                    elif resultado == 'high_light':
+                        msg = f"ALERTA LUZ: Reducir iluminación (Actual: {valor})"
+                    else:  # false
+                        msg = f"LUZ NORMAL: Iluminación óptima ({valor})"
+                
+                else:  # temperatura, humedad
+                    actuado_str = query_result[0]['R']
+                    actuado = actuado_str == 'true'
+                    msg = f"{'ALERTA' if actuado else 'OK'}: {sensor_type} para {plant_type}"
+                
                 print(f"   msg = {msg}")
                 print("="*60 + "\n")
                 
