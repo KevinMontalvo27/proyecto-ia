@@ -25,12 +25,12 @@ def classify_plant_health(image: Image.Image) -> List[Dict[str, any]]:
         image: Objeto PIL.Image de la planta a analizar
 
     Returns:
-        List[Dict]: Lista de predicciones con formato:
-            [
-                {"label": "nombre_enfermedad", "score": 0.95},
-                {"label": "otra_enfermedad", "score": 0.03},
-                ...
-            ]
+        Dict: Prediccion con mayor score:
+            {
+                "label": "nombre_enfermedad",
+                "score": 0.95
+            }
+
 
     Raises:
         Exception: Si hay error en la clasificación
@@ -38,8 +38,12 @@ def classify_plant_health(image: Image.Image) -> List[Dict[str, any]]:
     try:
         print("Realizando análisis de imagen...")
         predictions = plant_classifier(image)
-        print(f"Análisis completado. {len(predictions)} predicciones obtenidas")
-        return predictions
+
+        #Obtener la clasificacion con mayor score
+        top_prediction = predictions[0]
+
+        print(f"Diagnóstico: {top_prediction['label']} (confianza: {top_prediction['score']:.2%})")
+        return top_prediction
 
     except Exception as e:
         print(f"Error al clasificar la imagen: {e}")

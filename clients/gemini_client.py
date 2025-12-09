@@ -48,17 +48,18 @@ class GeminiClient:
             },
         ]
 
-        # Inicializar modelo
+        # Inicializar modelo - gemini-2.5-flash únicamente
         self.model = genai.GenerativeModel(
             model_name="gemini-2.5-flash",
             generation_config=self.generation_config,
             safety_settings=self.safety_settings
         )
+        self.model_name = "gemini-2.5-flash"
 
         # Cargar prompt del sistema
         self.system_prompt = self._load_system_prompt()
 
-        logger.info("Cliente de Gemini inicializado correctamente")
+        logger.info(f"✓ Cliente de Gemini inicializado con modelo: {self.model_name}")
 
     def _load_system_prompt(self) -> str:
         """Carga el prompt del sistema desde el archivo"""
@@ -180,6 +181,147 @@ Confianza: {plant_analysis.get('confidence_percent', 0):.2f}%"""
         except Exception as e:
             logger.error(f"Error al generar respuesta: {str(e)}")
             raise Exception(f"Error en la generación de contenido: {str(e)}")
+
+    def generate_plant_diagnosis_recommendations(
+            self,
+            plant_name: str,
+            disease_name: str,
+            confidence: float,
+            sensor_context: Optional[str] = None
+    ) -> str:
+        """
+        Genera recomendaciones iniciales cuando se detecta una enfermedad en una planta
+
+        Args:
+            plant_name: Nombre de la planta (ej: "Tomate", "Maíz")
+            disease_name: Nombre de la enfermedad detectada
+            confidence: Nivel de confianza del diagnóstico (0-100)
+            sensor_context: Contexto opcional de sensores del invernadero
+
+        Returns:
+            str: Mensaje con recomendaciones detalladas
+
+        Example:
+            client.generate_plant_diagnosis_recommendations(
+                plant_name="Tomate",
+                disease_name="Late Blight",
+                confidence=95.5,
+                sensor_context="Temp: 24°C, Humedad: 75%"
+            )
+        """
+        import time
+
+        max_retries = 3
+        retry_delay = 2  # segundos
+
+        for attempt in range(max_retries):
+            try:
+                # Construir el prompt especializado
+                prompt = self._build_diagnosis_prompt(
+                    plant_name=plant_name,
+                    disease_name=disease_name,
+                    confidence=confidence,
+                    sensor_context=sensor_context
+                )
+
+                # Generar respuesta
+                logger.info(f"Generando recomendaciones con {self.model_name} (intento {attempt + 1}/{max_retries})")
+                response = self.model.generate_content(prompt)
+                return response.text
+
+            except Exception as e:
+                error_message = str(e)
+
+                # Detectar error de rate limit
+                if "429" in error_message or "quota" in error_message.lower():
+                    logger.warning(f"Rate limit alcanzado en intento {attempt + 1}/{max_retries}")
+
+                    # Si es el último intento, lanzar excepción con mensaje amigable
+                    if attempt == max_retries - 1:
+                        raise Exception(
+                            "Límite de solicitudes alcanzado. Por favor intenta nuevamente en 1 minuto. "
+                            "Esto ocurre porque la API gratuita de Gemini tiene límites de uso."
+                        )
+
+                    # Esperar antes de reintentar (aumentar el delay con cada intento)
+                    wait_time = retry_delay * (attempt + 1)
+                    logger.info(f"Esperando {wait_time} segundos antes de reintentar...")
+                    time.sleep(wait_time)
+                    continue
+
+                # Para otros errores, lanzar inmediatamente
+                logger.error(f"Error al generar recomendaciones de diagnóstico: {error_message}")
+                raise Exception(f"Error al generar recomendaciones: {error_message}")
+
+        # Si llegamos aquí, todos los reintentos fallaron
+        raise Exception("No se pudieron generar recomendaciones después de múltiples intentos")
+
+    def _build_diagnosis_prompt(
+            self,
+            plant_name: str,
+            disease_name: str,
+            confidence: float,
+            sensor_context: Optional[str] = None
+    ) -> str:
+        """
+        Construye el prompt especializado para diagnóstico de plantas
+
+        Args:
+            plant_name: Nombre de la planta
+            disease_name: Nombre de la enfermedad
+            confidence: Nivel de confianza (0-100)
+            sensor_context: Contexto de sensores (opcional)
+
+        Returns:
+            str: Prompt completo formateado
+        """
+        # Formatear el nombre de la enfermedad (remover underscores, capitalizar)
+        formatted_disease = disease_name.replace('_', ' ').title()
+
+        prompt = f"""Eres un experto en agricultura y fitosanidad. Se ha detectado un problema en una planta mediante análisis de imagen con inteligencia artificial.
+
+**DIAGNÓSTICO DETECTADO:**
+- Planta: {plant_name}
+- Problema detectado: {formatted_disease}
+- Nivel de confianza: {confidence:.1f}%
+
+"""
+
+        # Agregar contexto de sensores si está disponible
+        if sensor_context:
+            prompt += f"""**CONDICIONES AMBIENTALES DEL INVERNADERO:**
+{sensor_context}
+
+"""
+
+        prompt += """**INSTRUCCIONES:**
+Por favor proporciona:
+
+1. **Confirmación del diagnóstico**: Explica brevemente qué es esta enfermedad/problema y sus síntomas característicos.
+
+2. **Causas probables**: Basándote en las condiciones ambientales (si están disponibles), indica qué factores pueden haber contribuido a este problema.
+
+3. **Recomendaciones de tratamiento**:
+   - Tratamientos inmediatos
+   - Productos recomendados (fungicidas, bactericidas, etc.)
+   - Métodos orgánicos alternativos si aplican
+
+4. **Medidas preventivas**:
+   - Ajustes en condiciones ambientales (temperatura, humedad, etc.)
+   - Prácticas de manejo
+   - Monitoreo continuo
+
+5. **Pronóstico**: Indica la gravedad y si la planta puede recuperarse con tratamiento adecuado.
+
+**IMPORTANTE:** 
+- Sé específico y práctico en tus recomendaciones
+- Si las condiciones ambientales contribuyen al problema, señálalo claramente
+- Usa un tono profesional pero accesible
+- Organiza la información con encabezados claros
+
+Responde de forma completa pero concisa."""
+
+        return prompt
 
 
 # Función de prueba
