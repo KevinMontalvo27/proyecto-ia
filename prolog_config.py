@@ -86,7 +86,7 @@ def populate_sensor_data(db):
             {"plant_type": "uva", "sensor": "humedad", "min": 50.0, "max": 60.0},
             {"plant_type": "uva", "sensor": "luz", "min": 10000.0, "max": 35000.0},
             # GENERAL (Seguridad) Ibañez me dijo que lo quitara. LA LUZ QUE SEGUN SI
-            #{"plant_type": "general", "sensor": "humo", "min": 0.0, "max": 50.0},
+            {"plant_type": "general", "sensor": "humo", "min": 0.0, "max": 1000.0},
         ]
 
         for data in sensor_thresholds:

@@ -9,7 +9,7 @@
 connect_db :-
     odbc_connect('PostgreSQL35W', _Conn,
         [ user('postgres'),
-          password('123456789'),
+          password('123456789'), %cambien esto segun su configuracion
           alias(pgdb),
           open(once)
         ]).
@@ -65,15 +65,25 @@ sensor_fuera_de_rango(humedad, PlantType, Valor, Resultado) :-
     ).
 
 % ============================================================
-% REGLA: Luz (retorna estado para Gemini), aqui es un XD, el como se usara esta chingadera
+% REGLA: Humo (mismo umbral para TODAS las plantas)
 % ============================================================
-sensor_luz_estado(luz, PlantType, Valor, Estado) :-
+sensor_fuera_de_rango(humo, _PlantType, Valor, Resultado) :-
+    umbral_sensor(humo, general, _Min, Max),
+    (Valor > Max
+     -> Resultado = true   % ALTA → ALERTA
+    ; Resultado = false    % NORMAL
+    ).
+
+% ============================================================
+% REGLA: Luz (mensajito)
+% ============================================================
+sensor_fuera_de_rango(luz, PlantType, Valor, Resultado) :-
     umbral_sensor(luz, PlantType, Min, Max),
     (Valor < Min
-     -> Estado = low_light   % BAJA → Recomendación: aumentar luz
+     -> Resultado = low_light   % BAJA
     ; Valor > Max
-     -> Estado = high_light  % ALTA → Recomendación: reducir luz
-    ; Estado = normal        % Normal → Sin recomendación
+     -> Resultado = high_light  % ALTA
+    ; Resultado = false         % NORMAL
     ).
 
 % Caso 1: Diagnóstico registrado en BD y NO es healthy
