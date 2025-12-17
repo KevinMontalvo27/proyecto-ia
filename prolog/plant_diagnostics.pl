@@ -75,7 +75,7 @@ sensor_fuera_de_rango(humo, _PlantType, Valor, Resultado) :-
     ).
 
 % ============================================================
-% REGLA: Luz (mensajito)
+% REGLA: Luz
 % ============================================================
 sensor_fuera_de_rango(luz, PlantType, Valor, Resultado) :-
     umbral_sensor(luz, PlantType, Min, Max),
@@ -94,7 +94,7 @@ check_planta(Planta, Diagnostico, Respuesta) :-
 
 % Caso 2: Planta está sana
 check_planta(Planta, healthy, Respuesta) :-
-    format(string(Respuesta), "~w está saludable. No se requiere accion.", [Planta]).
+    format(string(Respuesta), "~w esta saludable. No se requiere accion.", [Planta]).
 
 % Caso 3: Diagnóstico NO registrado en la BD (nuevo diagnóstico detectado)
 check_planta(Planta, Diagnostico, Respuesta) :-

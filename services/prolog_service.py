@@ -52,7 +52,7 @@ class PrologService:
 
             if results:
                 response = results[0]['Respuesta']
-                print(f"🤖 Prolog response: {response}")
+                print(f"Prolog response: {response}")
                 return response
             else:
                 return f"No se pudo procesar la consulta para {plant} con diagnóstico {diagnostic}"
@@ -69,7 +69,7 @@ class PrologService:
         try:
             if self._prolog:
                 list(self._prolog.query("inicializar_sistema"))
-                print("✓ Sistema Prolog recargado")
+                print("Sistema Prolog recargado")
         except Exception as e:
             print(f"✗ Error al recargar Prolog: {str(e)}")
             raise
@@ -88,5 +88,5 @@ class PrologService:
             self._initialize_prolog()
             return list(self._prolog.query(query))
         except Exception as e:
-            print(f"✗ Error en consulta personalizada: {str(e)}")
+            print(f"Error en consulta personalizada: {str(e)}")
             raise

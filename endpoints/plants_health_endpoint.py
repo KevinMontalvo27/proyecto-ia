@@ -89,7 +89,7 @@ async def analyze_plant_image(
         hf_label = prediction['label']
         confidence = prediction['score']
 
-        print(f"🔍 HuggingFace result: {hf_label} ({confidence:.2%})")
+        print(f"HuggingFace result: {hf_label} ({confidence:.2%})")
 
         # 3. Parsear la etiqueta de HuggingFace usando el mapper
         try:
@@ -104,7 +104,7 @@ async def analyze_plant_image(
         plant_id = plant_info['plant_id']
         diagnostic = plant_info['diagnostic']
 
-        print(f"📊 Parsed: Plant={plant} (ID={plant_id}), Diagnostic={diagnostic}")
+        print(f"Parsed: Plant={plant} (ID={plant_id}), Diagnostic={diagnostic}")
 
         # 4. Guardar en base de datos usando el servicio
         analysis = PlantAnalysisService.create_analysis(
@@ -124,7 +124,7 @@ async def analyze_plant_image(
         else:
             prolog_response = str(prolog_response_raw)
 
-        print(f"🤖 Prolog response: {prolog_response}")
+        print(f"Prolog response: {prolog_response}")
 
         # 6. Preparar respuesta base (MANTENER ESTRUCTURA ORIGINAL)
         response = {
@@ -147,14 +147,14 @@ async def analyze_plant_image(
         alert_activated = "Alerta" in prolog_response and "Se recomienda" in prolog_response
         response["alert_activated"] = alert_activated
 
-        print(f"{'🚨' if alert_activated else '✅'} Alert activated: {alert_activated}")
+        print(f"{'' if alert_activated else ''} Alert activated: {alert_activated}")
 
         # ========================================
         # 8. NUEVO: SI HAY ALERTA → CREAR CHAT CON GEMINI
         # ========================================
         if alert_activated:
             try:
-                print(f"\n🤖 ALERTA DETECTADA - Iniciando proceso con Gemini...")
+                print(f"\nALERTA DETECTADA - Iniciando proceso con Gemini...")
 
                 # 8.1: Crear el chat
                 chat_name = f"Diagnóstico: {plant.title()} - {diagnostic.replace('_', ' ').title()}"
@@ -167,12 +167,12 @@ async def analyze_plant_image(
                 if not chat:
                     raise Exception("Error al crear el chat")
 
-                print(f"✓ Chat creado (ID: {chat.id}): {chat_name}")
+                print(f"Chat creado (ID: {chat.id}): {chat_name}")
 
                 # 8.2: Obtener contexto de sensores (si hay greenhouse_id)
                 sensor_context = None
                 if greenhouse_id:
-                    print(f"📡 Obteniendo datos de sensores del invernadero {greenhouse_id}...")
+                    print(f"Obteniendo datos de sensores del invernadero {greenhouse_id}...")
                     try:
                         # Optimizado: solo últimas 10 lecturas por sensor
                         sensor_context = SensorContextService.get_complete_context(
@@ -181,15 +181,15 @@ async def analyze_plant_image(
                             days=7,
                             max_readings_per_sensor=10  # Solo últimas 10 lecturas
                         )
-                        print(f"✓ Contexto de sensores obtenido")
+                        print(f"")
                     except Exception as sensor_error:
-                        print(f"⚠️ No se pudo obtener contexto de sensores: {sensor_error}")
+                        print(f"")
                         sensor_context = None
                 else:
-                    print("ℹ️ No se proporcionó greenhouse_id, continuando sin contexto de sensores")
+                    print("")
 
                 # 8.3: Generar recomendaciones con Gemini
-                print(f"🧠 Generando recomendaciones con Gemini...")
+                print(f"Generando recomendaciones con Gemini...")
                 gemini_client = GeminiClient()
 
                 recommendations = gemini_client.generate_plant_diagnosis_recommendations(
@@ -199,7 +199,7 @@ async def analyze_plant_image(
                     sensor_context=sensor_context
                 )
 
-                print(f"✓ Recomendaciones generadas ({len(recommendations)} caracteres)")
+                print(f"Recomendaciones generadas ({len(recommendations)} caracteres)")
 
                 # 8.4: Guardar el mensaje de Gemini en el chat
                 gemini_message = ChatService.create_message(
@@ -212,7 +212,7 @@ async def analyze_plant_image(
                 if not gemini_message:
                     raise Exception("Error al guardar el mensaje de Gemini")
 
-                print(f"✓ Mensaje guardado en el chat")
+                print(f"Mensaje guardado en el chat")
 
                 # 8.5: Agregar información del chat a la respuesta
                 response.update({
@@ -222,15 +222,15 @@ async def analyze_plant_image(
                         recommendations) > 200 else recommendations
                 })
 
-                print(f"✅ Chat con Gemini creado exitosamente\n")
+                print(f"Chat con Gemini creado exitosamente\n")
 
             except Exception as chat_error:
                 # Si falla la creación del chat, aún retornamos el análisis y Prolog
-                print(f"❌ Error al crear chat con Gemini: {str(chat_error)}")
+                print(f"Error al crear chat con Gemini: {str(chat_error)}")
                 response["chat_error"] = f"No se pudieron generar recomendaciones: {str(chat_error)}"
 
         else:
-            print(f"ℹ️ No se requiere chat con Gemini (sin alerta de Prolog)\n")
+            print(f"No se requiere chat con Gemini (sin alerta de Prolog)\n")
 
         return response
 

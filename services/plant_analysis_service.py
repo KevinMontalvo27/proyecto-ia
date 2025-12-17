@@ -46,7 +46,7 @@ class PlantAnalysisService:
             db.commit()
             db.refresh(new_analysis)
 
-            print(f"✓ Análisis guardado: Plant ID {plant_id} - {diagnosis} ({confidence:.2%})")
+            print(f"Análisis guardado: Plant ID {plant_id} - {diagnosis} ({confidence:.2%})")
             return new_analysis
 
         except Exception as e:
@@ -180,7 +180,7 @@ class PlantAnalysisService:
             if analysis:
                 db.delete(analysis)
                 db.commit()
-                print(f"✓ Análisis {analysis_id} eliminado")
+                print(f"Análisis {analysis_id} eliminado")
                 return True
             return False
         except Exception as e:
