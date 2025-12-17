@@ -157,3 +157,15 @@ class GreenhouseService:
         if not greenhouse:
             return False
         return greenhouse.user_id == user_id
+
+    @staticmethod
+    def get_greenhouse_complete(db: Session, greenhouse_id: int):
+        """
+        Busca el invernadero y carga explícitamente sus relaciones (plantas y sensores)
+        para que el esquema GreenhouseDetailResponse no falle.
+        """
+        return db.query(Greenhouse).options(
+            joinedload(Greenhouse.plants),
+            joinedload(Greenhouse.sensors)
+        ).filter(Greenhouse.id == greenhouse_id).first()
+    # ---------------------------------------

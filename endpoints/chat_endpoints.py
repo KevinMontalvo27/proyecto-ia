@@ -34,7 +34,7 @@ def get_db():
 @router.post("/", response_model=ChatResponse, status_code=status.HTTP_201_CREATED)
 def create_chat(
         chat: ChatCreate,
-        user_id: int,  # TODO: En producción esto vendrá del token JWT
+        user_id: int,
         db: Session = Depends(get_db)
 ):
     """
@@ -75,15 +75,6 @@ def get_user_chats(
 ):
     """
     Obtener todos los chats de un usuario
-
-    Args:
-        user_id: ID del usuario
-        skip: Número de registros a saltar (paginación)
-        limit: Número máximo de registros a retornar
-        db: Sesión de base de datos
-
-    Returns:
-        List[ChatResponse]: Lista de chats del usuario ordenados por fecha de actualización
     """
     chats = ChatService.get_user_chats(
         db=db,
@@ -94,6 +85,43 @@ def get_user_chats(
 
     return chats
 
+
+
+@router.get("/{chat_id}/messages", response_model=List[MessageResponse])
+def get_chat_messages(
+        chat_id: int,
+        user_id: int,
+        skip: int = 0,
+        limit: int = 100,
+        db: Session = Depends(get_db)
+):
+    """
+    Obtener solo los mensajes de un chat (sin los datos del chat)
+    """
+    # Verificar que el chat existe
+    chat = ChatService.get_chat_by_id(db, chat_id)
+    if not chat:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Chat no encontrado"
+        )
+
+    # Verificar permisos
+    if not ChatService.user_owns_chat(db, chat_id, user_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para acceder a este chat"
+        )
+
+    # Obtener mensajes
+    messages = ChatService.get_chat_messages(
+        db=db,
+        chat_id=chat_id,
+        skip=skip,
+        limit=limit
+    )
+
+    return messages
 
 @router.get("/{chat_id}", response_model=ChatDetailResponse)
 def get_chat(
@@ -328,3 +356,4 @@ def delete_chat(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Error al eliminar el chat"
         )
+

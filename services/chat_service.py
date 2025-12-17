@@ -80,6 +80,31 @@ class ChatService:
         ).offset(skip).limit(limit).all()
 
     @staticmethod
+    def get_chat_messages(
+            db: Session,
+            chat_id: int,
+            skip: int = 0,
+            limit: int = 100
+    ) -> List[Message]:
+        """
+        Obtiene los mensajes de un chat ordenados por fecha
+
+        Args:
+            db: Sesión de base de datos
+            chat_id: ID del chat
+            skip: Número de mensajes a saltar (paginación)
+            limit: Número máximo de mensajes
+
+        Returns:
+            List[Message]: Lista de mensajes ordenados por fecha
+        """
+        return db.query(Message).filter(
+            Message.chat_id == chat_id
+        ).order_by(
+            Message.sent_at.asc()  # Ordenar del más antiguo al más nuevo
+        ).offset(skip).limit(limit).all()
+
+    @staticmethod
     def create_message(
             db: Session,
             chat_id: int,

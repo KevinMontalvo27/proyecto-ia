@@ -32,3 +32,23 @@ class PlantResponse(PlantBase):
 class PlantDetailResponse(PlantResponse):
     """Schema con análisis de la planta"""
     analyses: List['PlantAnalysisResponse'] = []
+
+
+# Detalle con referencias diferidas
+class PlantDetailResponse(PlantResponse):
+    analyses: List['PlantAnalysisResponse'] = []  # Referencia diferida
+
+    class Config:
+        from_attributes = True
+
+
+# --- ZONA DE RESOLUCIÓN DE REFERENCIAS ---
+try:
+    # Importar el esquema de análisis (ajusta el nombre del archivo si es distinto)
+    # Si no tienes este archivo aún, comenta estas líneas temporalmente
+    from schemas.plant_analysis_schema import PlantAnalysisResponse
+
+    PlantDetailResponse.model_rebuild()
+except ImportError:
+    # Si no existe el módulo aún, evitamos que crashée, pero el campo quedará vacío
+    pass

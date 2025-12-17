@@ -7,7 +7,7 @@ from schemas.plant_schema import (
     PlantResponse,
     PlantDetailResponse
 )
-from services.plant_analysis_service import PlantService
+from services.plant_service import PlantService
 from services.greenhouse_service import GreenhouseService
 from database_config import SessionLocal
 
