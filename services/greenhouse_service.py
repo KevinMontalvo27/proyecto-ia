@@ -169,3 +169,20 @@ class GreenhouseService:
             joinedload(Greenhouse.sensors)
         ).filter(Greenhouse.id == greenhouse_id).first()
     # ---------------------------------------
+
+    @staticmethod
+    def get_all_greenhouses(db: Session, skip: int = 0, limit: int = 100) -> List[Greenhouse]:
+        """
+        Obtiene todos los invernaderos en la base de datos
+
+        Args:
+            db: Sesión de base de datos
+            skip: Número de registros a saltar (paginación)
+            limit: Número máximo de registros a retornar
+
+        Returns:
+            List[Greenhouse]: Lista de invernaderos
+        """
+        return db.query(Greenhouse).order_by(
+            Greenhouse.created_at.desc()
+        ).offset(skip).limit(limit).all()

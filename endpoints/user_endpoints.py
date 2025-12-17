@@ -175,3 +175,29 @@ def get_all_users(
 
     users = UserService.get_all_users(db=db, skip=skip, limit=limit)
     return users
+
+
+@router.get("/{user_id}", response_model=UserResponse)
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    """
+    Obtener un usuario por su ID
+
+    Args:
+        user_id: ID del usuario
+        db: Sesión de base de datos
+
+    Returns:
+        UserResponse: Usuario encontrado
+
+    Raises:
+        HTTPException 404: Si el usuario no existe
+    """
+    user = UserService.get_user_by_id(db, user_id)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+
+    return user
