@@ -235,3 +235,31 @@ def get_user_greenhouses(
     )
 
     return greenhouses
+
+
+@router.get("/", response_model=List[GreenhouseResponse])
+def get_all_greenhouses(
+        skip: int = 0,
+        limit: int = 100,
+        db: Session = Depends(get_db)
+):
+    """
+    Obtener todos los invernaderos
+
+    Args:
+        skip: Número de registros a saltar (paginación)
+        limit: Número máximo de registros a retornar (máximo 100)
+        db: Sesión de base de datos
+
+    Returns:
+        List[GreenhouseResponse]: Lista de invernaderos
+
+    Example:
+        GET /greenhouses/?skip=0&limit=10
+    """
+    # Limitar el máximo de invernaderos por request
+    if limit > 100:
+        limit = 100
+
+    greenhouses = GreenhouseService.get_all_greenhouses(db=db, skip=skip, limit=limit)
+    return greenhouses

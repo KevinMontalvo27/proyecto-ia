@@ -202,3 +202,18 @@ class SensorService:
         if not sensor:
             return False
         return sensor.greenhouse_id == greenhouse_id
+
+    @staticmethod
+    def get_all_sensors(db: Session, skip: int = 0, limit: int = 100) -> List[Sensor]:
+        """
+        Obtener todos los sensores con paginación
+
+        Args:
+            db: Sesión de base de datos
+            skip: Número de registros a saltar
+            limit: Número máximo de registros a retornar
+
+        Returns:
+            List[Sensor]: Lista de sensores
+        """
+        return db.query(Sensor).offset(skip).limit(limit).all()

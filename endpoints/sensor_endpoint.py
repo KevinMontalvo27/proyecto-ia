@@ -267,3 +267,30 @@ def delete_sensor(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Error al eliminar el sensor"
         )
+
+    @router.get("/", response_model=List[SensorResponse])
+    def get_all_sensors(
+            skip: int = 0,
+            limit: int = 100,
+            db: Session = Depends(get_db)
+    ):
+        """
+        Obtener todos los sensores
+
+        Args:
+            skip: Número de registros a saltar (paginación)
+            limit: Número máximo de registros a retornar (máximo 100)
+            db: Sesión de base de datos
+
+        Returns:
+            List[SensorResponse]: Lista de sensores
+
+        Example:
+            GET /sensors/?skip=0&limit=10
+        """
+        # Limitar el máximo de sensores por request
+        if limit > 100:
+            limit = 100
+
+        sensors = SensorService.get_all_sensors(db=db, skip=skip, limit=limit)
+        return sensors
